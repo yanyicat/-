@@ -145,7 +145,7 @@
 
         renderStory(`下班回家了（今晚已行動 ${state.actions.length}/3 次）：`);
         const possibleActions = [
-            { id: 'feed', text: "喂貓" },
+            { id: 'feed', text: "餵貓" },
             { id: 'poop', text: "鏟屎" },
             { id: 'bath', text: "幫貓洗澡" },
             { id: 'sleep', text: "睡覺" }
@@ -232,7 +232,7 @@
     function winGame() {
         isGameOver = true;
         document.getElementById('ui-header').style.display = 'none';
-        renderStory("<strong>10天後：「原主人的到訪」</strong><br><br>那位漂亮的女郎終於回來了。看著你把兩隻貓照顧得這麼好，她留下了感激的淚水。");
+        renderStory("<strong>10天後：「原主人的到訪」</strong><br><br>那位漂亮的女郎終於回來了。看著你把兩隻貓照顧得這麼好，她流下了感激的淚水。");
         renderOptions([{ text: "重新遊戲", action: initGame, forceEnable: true }]);
     }
 
