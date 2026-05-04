@@ -16,7 +16,6 @@
         button:hover { background: var(--main-color); color: white; }
         button.active { background: #a5b5a9; color: white; border-color: #a5b5a9; }
         .ending-title { color: #8b0000; font-size: 1.2em; font-weight: bold; display: block; margin-bottom: 10px; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -45,11 +44,11 @@
             notFedCount: 0,
             notPoopCount: 0,
             notBathCount: 0,
-            noSleepStreak: 0, 
+            noSleepStreak: 0, // 連續不睡覺天數
             didSleepLastNight: true, 
             isSickDay: false, 
-            actions: [], 
-            tempFoodCost: 0 
+            actions: [], // 晚上選擇的行動 ['feed', 'poop', 'bath']
+            tempFoodCost: 0 // 暫存晚上餵食的扣款，以便取消時加回
         };
         document.getElementById('ui-header').style.display = 'none';
         renderStory(`<h2 style="text-align:center;">貓之猜想</h2><p style="text-align:center;">點擊進入遊戲開始你的故事</p>`);
@@ -74,10 +73,15 @@
 
     function morningPhase() {
         if (state.day > 10) return winGame();
+        
+        // 薪水發放：有上班才加錢
         if (state.day > 1 && !state.isSickDay) state.money += 1000;
+        
+        // 重置當日狀態
         state.actions = [];
         state.tempFoodCost = 0;
         updateUI();
+
         renderStory(`第 ${state.day} 天：早晨。二毛在蹭你的腳踝。`);
         renderFoodMenu(false); 
     }
@@ -111,6 +115,7 @@
     function workSelection() {
         renderStory("餵完貓了，準備出門上班。");
         let opts = [{ text: "上班", action: () => { state.isSickDay = false; nightPhase(); } }];
+        // 前一天沒睡覺才出現請假
         if (!state.didSleepLastNight) {
             opts.push({ text: "請假", action: forceSleep });
         }
@@ -124,7 +129,7 @@
     }
 
     function nightPhase() {
-        if (state.isSickDay) return;
+        if (state.isSickDay) return; // 補眠模式由 forceSleep 控制
         updateUI();
         renderStory(`下班回家了（今晚已行動 ${state.actions.length}/3 次）：`);
         
@@ -156,13 +161,15 @@
 
         let index = state.actions.indexOf(id);
         if (index > -1) {
+            // 取消行動
             state.actions.splice(index, 1);
             if (id === 'feed') {
-                state.money += state.tempFoodCost; 
+                state.money += state.tempFoodCost; // 加回錢
                 state.tempFoodCost = 0;
             }
             nightPhase();
         } else {
+            // 執行行動
             if (state.actions.length >= 3) return;
             if (id === 'feed') {
                 renderFoodMenu(true);
@@ -185,6 +192,7 @@
     }
 
     function nextDayLogic() {
+        // 結算數值
         if (!state.actions.includes('feed')) state.notFedCount++; else state.notFedCount = 0;
         if (!state.actions.includes('poop')) state.notPoopCount++; else state.notPoopCount = 0;
         if (!state.actions.includes('bath')) state.notBathCount++; else state.notBathCount = 0;
@@ -199,12 +207,12 @@
 
     const endings = {
         1: ["一如往常", "你的日子一如既往，沒有絲毫改變。"],
-        2: ["過期貓糧", "那一天，你經過寵物用品部，你發現他們把過期食品換了標籤，重新上架售賣。貓兒因此而死。"],
+        2: ["過期貓糧", "那一天，你經過寵物用品部，你發現他們把過期食品換了標籤，重新上架售賣，寵物部的那些傢伙從不尊重動物。貓兒因此而死。"],
         3: ["悲慘的貓", "連續３天晚上沒有進食後，回到家的你看著再無動靜的小貓痛哭出聲。"],
         4: ["臭氣熏天！", "家中滿是臭味，貓咪排泄物堆滿家中。"],
-        5: ["家貓還是流浪貓？！", "兩隻貓的毛髮打結，你差點以為流浪貓跑進你家。"],
+        5: ["家貓還是流浪貓？！", "兩隻貓的毛髮打結，身上滿是濃濃的臭味，你差點以為流浪貓跑進你家。"],
         6: ["貧困潦倒！", "你花光了所有金錢，現在你連自己都養不起了。"],
-        7: ["無法預料的死亡", "３天沒有闔眼的你終於無法負荷，進入了夢境。"]
+        7: ["無法預料的死亡", "３天沒有闔眼的你終於無法負荷，進入了死亡給予的、黑甜的夢境。"]
     };
 
     function triggerEnding(num) {
