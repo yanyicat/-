@@ -21,7 +21,7 @@
 <body>
 
 <div id="game-container">
-    <div id="ui-header">
+    <div id="ui-header" id="header-container">
         <div id="money-display">金額: $1000</div>
         <div id="day-display">第 1 天</div>
     </div>
@@ -34,8 +34,10 @@
 
 <script>
     let state = {};
+    let isGameOver = false; // 新增全域旗標，防止結局後繼續執行
 
     function initGame() {
+        isGameOver = false;
         state = {
             day: 1,
             money: 1000,
@@ -44,11 +46,11 @@
             notFedCount: 0,
             notPoopCount: 0,
             notBathCount: 0,
-            noSleepStreak: 0, // 連續不睡覺天數
+            noSleepStreak: 0,
             didSleepLastNight: true, 
             isSickDay: false, 
-            actions: [], // 晚上選擇的行動 ['feed', 'poop', 'bath']
-            tempFoodCost: 0 // 暫存晚上餵食的扣款，以便取消時加回
+            actions: [], 
+            tempFoodCost: 0 
         };
         document.getElementById('ui-header').style.display = 'none';
         renderStory(`<h2 style="text-align:center;">貓之猜想</h2><p style="text-align:center;">點擊進入遊戲開始你的故事</p>`);
@@ -56,9 +58,16 @@
     }
 
     function updateUI() {
+        if (isGameOver) return; // 如果已經結束，不再更新介面
+        
+        // 優先檢查破產
+        if (state.money < 0) {
+            triggerEnding(6);
+            return;
+        }
+
         document.getElementById('money-display').innerText = `金額: $${state.money}`;
         document.getElementById('day-display').innerText = `第 ${state.day} 天`;
-        if (state.money < 0) triggerEnding(6);
     }
 
     function firstScene() {
@@ -72,26 +81,28 @@
     }
 
     function morningPhase() {
+        if (isGameOver) return;
         if (state.day > 10) return winGame();
         
-        // 薪水發放：有上班才加錢
         if (state.day > 1 && !state.isSickDay) state.money += 1000;
         
-        // 重置當日狀態
         state.actions = [];
         state.tempFoodCost = 0;
         updateUI();
+
+        if (isGameOver) return; // 金錢檢查後的二次攔截
 
         renderStory(`第 ${state.day} 天：早晨。二毛在蹭你的腳踝。`);
         renderFoodMenu(false); 
     }
 
     function renderFoodMenu(isNight) {
+        if (isGameOver) return;
         renderStory(isNight ? "選擇今晚的貓糧（餵食算作一次行動）：" : "選擇早上的貓糧：");
         let opts = [
-            { text: "自家量販店貓糧 ($100)", action: () => doFeed(100, true, isNight) },
-            { text: "普通貓糧 ($300)", action: () => doFeed(300, false, isNight) },
-            { text: "加鈣貓糧 ($500)", action: () => doFeed(500, false, isNight) }
+            { text: "1. 自家量販店貓糧 ($100)", action: () => doFeed(100, true, isNight) },
+            { text: "2. 普通貓糧 ($300)", action: () => doFeed(300, false, isNight) },
+            { text: "3. 加鈣貓糧 ($500)", action: () => doFeed(500, false, isNight) }
         ];
         if (isNight) opts.push({ text: "返回選項", action: nightPhase });
         renderOptions(opts);
@@ -100,8 +111,13 @@
     function doFeed(cost, isExpired, isNight) {
         state.money -= cost;
         if (isExpired) state.expiredCount++;
-        if (state.expiredCount >= 5) return triggerEnding(2);
-        updateUI();
+        updateUI(); 
+        if (isGameOver) return;
+
+        if (state.expiredCount >= 5) {
+            triggerEnding(2);
+            return;
+        }
 
         if (isNight) {
             state.tempFoodCost = cost; 
@@ -115,7 +131,6 @@
     function workSelection() {
         renderStory("餵完貓了，準備出門上班。");
         let opts = [{ text: "上班", action: () => { state.isSickDay = false; nightPhase(); } }];
-        // 前一天沒睡覺才出現請假
         if (!state.didSleepLastNight) {
             opts.push({ text: "請假", action: forceSleep });
         }
@@ -125,12 +140,18 @@
     function forceSleep() {
         state.isSickDay = true;
         renderStory("你請了假，現在只能補眠。");
-        renderOptions([{ text: "強制補眠", action: () => { state.didSleepLastNight = true; state.noSleepStreak = 0; nextDayLogic(); } }]);
+        renderOptions([{ text: "強制補眠", action: () => { 
+            state.didSleepLastNight = true; 
+            state.noSleepStreak = 0; 
+            nextDayLogic(); 
+        } }]);
     }
 
     function nightPhase() {
-        if (state.isSickDay) return; // 補眠模式由 forceSleep 控制
+        if (isGameOver) return;
         updateUI();
+        if (isGameOver) return;
+
         renderStory(`下班回家了（今晚已行動 ${state.actions.length}/3 次）：`);
         
         const possibleActions = [
@@ -161,15 +182,13 @@
 
         let index = state.actions.indexOf(id);
         if (index > -1) {
-            // 取消行動
             state.actions.splice(index, 1);
             if (id === 'feed') {
-                state.money += state.tempFoodCost; // 加回錢
+                state.money += state.tempFoodCost; 
                 state.tempFoodCost = 0;
             }
             nightPhase();
         } else {
-            // 執行行動
             if (state.actions.length >= 3) return;
             if (id === 'feed') {
                 renderFoodMenu(true);
@@ -184,15 +203,19 @@
         if (state.actions.length >= 3) {
             state.didSleepLastNight = false;
             state.noSleepStreak++;
-            if (state.noSleepStreak >= 3) return triggerEnding(7);
-            nextDayLogic();
+            if (state.noSleepStreak >= 3) {
+                triggerEnding(7);
+            } else {
+                nextDayLogic();
+            }
         } else {
             nightPhase();
         }
     }
 
     function nextDayLogic() {
-        // 結算數值
+        if (isGameOver) return;
+        
         if (!state.actions.includes('feed')) state.notFedCount++; else state.notFedCount = 0;
         if (!state.actions.includes('poop')) state.notPoopCount++; else state.notPoopCount = 0;
         if (!state.actions.includes('bath')) state.notBathCount++; else state.notBathCount = 0;
@@ -216,12 +239,15 @@
     };
 
     function triggerEnding(num) {
-        document.getElementById('ui-header').style.display = 'none';
+        isGameOver = true; // 鎖定狀態
+        document.getElementById('ui-header').style.display = 'none'; // 隱藏頂部資訊
         renderStory(`<span class="ending-title">結局 ${num}：${endings[num][0]}</span><br>${endings[num][1]}`);
         renderOptions([{ text: "重新開始", action: initGame }]);
     }
 
     function winGame() {
+        isGameOver = true;
+        document.getElementById('ui-header').style.display = 'none';
         renderStory("<strong>10天後：「原主人的到訪」</strong><br><br>那位漂亮的女郎終於回來了。看著你把兩隻貓照顧得這麼好，她留下了感激的淚水。");
         renderOptions([{ text: "重新遊戲", action: initGame }]);
     }
