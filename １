@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>貓之猜想 - 養成遊戲</title>
+    <title>貓之猜想 </title>
     <style>
         :root { --main-color: #4a5d4e; --bg-color: #f5f2ed; }
         body { background-color: var(--bg-color); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
