@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>貓之猜想</title>
+    <style>
+        :root { --main-color: #5d4a4a; --bg-color: #f7f3f0; }
+        body { background-color: var(--bg-color); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { width: 550px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); overflow: hidden; }
+        #ui-header { background: var(--main-color); color: white; padding: 15px 25px; display: flex; justify-content: space-between; font-weight: bold; }
+        #content { padding: 30px; text-align: center; }
+        #cat-img { width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #story-text { min-height: 120px; line-height: 1.8; color: #333; text-align: left; margin-bottom: 25px; }
+        #options-box { display: flex; flex-direction: column; gap: 12px; }
+        button { padding: 12px; border: 2px solid var(--main-color); background: white; color: var(--main-color); cursor: pointer; border-radius: 10px; font-weight: bold; font-size: 1em; }
+        button:hover { background: var(--main-color); color: white; }
+        .ending { color: #d9534f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui-header" style="display:none;">
+        <div id="money-display">金額: $1000</div>
+        <div id="day-display">第 1 天</div>
+    </div>
+    <div id="content">
+        <img id="cat-img" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400" alt="二毛">
+        <div id="story-text">
+            <h2 style="text-align:center;">貓之猜想</h2>
+            <p style="text-align:center;">點擊進入遊戲開始你的故事</p>
+        </div>
+        <div id="options-box">
+            <button onclick="startGame()">進入遊戲</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let state = {
+        day: 1,
+        money: 1000,
+        hasSecondCat: false,
+        expiredCount: 0,
+        notFedCount: 0,
+        notPoopCount: 0,
+        notBathCount: 0,
+        mustSleep: false,
+        isSickDay: false,
+        nightActionsLeft: 3,
+        fedTonight: false
+    };
+
+    function startGame() {
+        document.getElementById('ui-header').style.display = 'flex';
+        renderStory("你是一家量販店家具部的組長，飼養著一隻雜毛綠眼貓——二毛。<br><br>常去的寵物店有一隻雜毛綠眼貓被寄養著，你記得那個漂亮的女郎焦急地帶著貓兒來寄養，但一直到倒閉了她都沒有再回來。");
+        renderOptions([
+            { text: "收養牠", action: () => { state.hasSecondCat = true; morningPhase(); } },
+            { text: "任其自生自滅", action: () => triggerEnding(1) }
+        ]);
+    }
+
+    function morningPhase() {
+        if (state.day > 10) return winGame();
+        
+        // 薪水邏輯：若非請假且不是第一天，增加1000
+        if (state.day > 1 && !state.isSickDay) state.money += 1000;
+        
+        state.nightActionsLeft = 3;
+        state.fedTonight = false;
+        updateUI();
+
+        if (state.isSickDay) {
+            renderStory(`第 ${state.day} 天：早晨。你因為熬夜感到精疲力竭...`);
+            renderOptions([{ text: "補眠", action: () => { state.isSickDay = false; state.mustSleep = false; nextDayLogic(); } }]);
+        } else {
+            renderStory(`第 ${state.day} 天：早晨。兩隻貓都在等著早餐。`);
+            renderFoodMenu(false); // 早上餵食
+        }
+    }
+
+    function renderFoodMenu(isNight) {
+        let options = [
+            { text: "1. 自家量販店貓糧 ($100)", action: () => doFeed(100, true, isNight) },
+            { text: "2. 普通貓糧 ($300)", action: () => doFeed(300, false, isNight) },
+            { text: "3. 加鈣貓糧 ($500)", action: () => doFeed(500, false, isNight) }
+        ];
+        
+        // 只有晚上可以返回
+        if (isNight) {
+            options.push({ text: "返回選項", action: nightPhase });
+        }
+
+        renderOptions(options);
+    }
+
+    function doFeed(cost, isExpired, isNight) {
+        state.money -= cost;
+        if (isExpired) state.expiredCount++;
+        if (state.expiredCount >= 5) return triggerEnding(2);
+
+        if (isNight) {
+            state.fedTonight = true;
+            state.notFedCount = 0;
+            consumeAction();
+        } else {
+            // 早上餵完進上班
+            workPhase();
+        }
+    }
+
+    function workPhase() {
+        renderStory("餵完貓了，該準備出門了嗎？");
+        let opts = [{ text: "上班", action: () => { state.isSickDay = false; nightPhase(); } }];
+        if (state.mustSleep) {
+            opts.push({ text: "請假", action: () => { state.isSickDay = true; morningPhase(); } });
+        }
+        renderOptions(opts);
+    }
+
+    function nightPhase() {
+        updateUI();
+        renderStory(`晚上回家了。你還能做 ${state.nightActionsLeft} 件事：<br>（餵貓也會消耗一次行動）`);
+        renderOptions([
+            { text: "喂貓", action: () => renderFoodMenu(true) },
+            { text: "鏟屎", action: () => { state.notPoopCount = 0; consumeAction(); } },
+            { text: "幫貓洗澡", action: () => { state.notBathCount = 0; consumeAction(); } },
+            { text: "睡覺", action: () => { state.mustSleep = false; nextDayLogic(); } }
+        ]);
+    }
+
+    function consumeAction() {
+        state.nightActionsLeft--;
+        if (state.nightActionsLeft <= 0) {
+            state.mustSleep = true; // 選滿三項且沒主動睡覺，隔天要請假
+            nextDayLogic();
+        } else {
+            nightPhase();
+        }
+    }
+
+    function nextDayLogic() {
+        // 檢查晚上是否有餵貓
+        if (!state.fedTonight) state.notFedCount++;
+        
+        // 雖然簡化邏輯，但這裡每過一天，沒做的事情就會累積
+        // 因為 consumeAction 裡會重置該項，所以這裡檢查沒被重置的
+        state.notPoopCount++; // 這裡只是輔助計數，實際在 nextDayLogic 會檢查
+        state.notBathCount++; 
+
+        // 结局判定
+        if (state.notFedCount >= 3) return triggerEnding(3);
+        if (state.notPoopCount > 3) return triggerEnding(4);
+        if (state.notBathCount > 3) return triggerEnding(5);
+
+        state.day++;
+        morningPhase();
+    }
+
+    const endings = {
+        1: "結局1：一如往常<br>你的日子一如既往，沒有絲毫改變。",
+        2: "結局2：過期貓糧<br>你發現他們把過期食品換了標籤，重新上架售賣，貓兒因此而死。",
+        3: "結局3：悲慘的貓<br>連續３天晚上沒有進食後，回到家的你看著再無動靜的小貓痛哭出聲。",
+        4: "結局4：臭氣熏天！<br>家中滿是臭味，貓咪排泄物堆滿家中。",
+        5: "結局5：家貓還是流浪貓？！<br>兩隻貓的毛髮打結，身上滿是濃濃的臭味，你差點以為流浪貓跑進你家。"
+    };
+
+    function triggerEnding(num) {
+        renderStory(`<span class="ending">${endings[num]}</span>`);
+        renderOptions([{ text: "重新開始", action: () => location.reload() }]);
+    }
+
+    function winGame() {
+        renderStory("10天後：「原主人的到訪」<br>那位漂亮的女郎終於出現了，她感激地看著被照顧得很好的貓兒。");
+        renderOptions([{ text: "達成美好結局", action: () => location.reload() }]);
+    }
+
+    function renderStory(html) { document.getElementById('story-text').innerHTML = html; }
+    function renderOptions(opts) {
+        const box = document.getElementById('options-box');
+        box.innerHTML = '';
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.innerHTML = o.text;
+            b.onclick = o.action;
+            box.appendChild(b);
+        });
+    }
+    function updateUI() {
+        document.getElementById('money-display').innerText = `金額: $${state.money}`;
+        document.getElementById('day-display').innerText = `第 ${state.day} 天`;
+    }
+</script>
+</body>
+</html>
