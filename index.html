@@ -2,39 +2,247 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>貓之猜想 </title>
+    <title>貓之猜想</title>
     <style>
         :root { --main-color: #4a5d4e; --bg-color: #f5f2ed; }
         body { background-color: var(--bg-color); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        #game-container { width: 550px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); overflow: hidden; position: relative; }
-        
-        /* 頂部資訊欄 */
-        #ui-header { background: var(--main-color); color: white; padding: 15px 25px; display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; }
-        
-        /* 內容區 */
+        #game-container { width: 550px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); overflow: hidden; }
+        #ui-header { background: var(--main-color); color: white; padding: 15px 25px; display: flex; justify-content: space-between; font-weight: bold; display: none; }
         #content { padding: 30px; text-align: center; }
-        #cat-img { width: 280px; height: 200px; object-fit: cover; border-radius: 15px; margin-bottom: 20px; border: 3px solid #eee; }
-        #story-text { min-height: 120px; line-height: 1.8; color: #333; text-align: left; margin-bottom: 25px; font-size: 1.05em; }
-        
-        /* 按鈕區 */
+        #cat-img { width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 20px; border: 3px solid #eee; }
+        #story-text { min-height: 140px; line-height: 1.8; color: #333; text-align: left; margin-bottom: 25px; }
         #options-box { display: flex; flex-direction: column; gap: 12px; }
-        button { padding: 12px 20px; border: 2px solid var(--main-color); background: white; color: var(--main-color); 
-                 cursor: pointer; border-radius: 10px; font-size: 1em; font-weight: bold; transition: 0.3s; }
+        button { padding: 12px; border: 2px solid var(--main-color); background: white; color: var(--main-color); cursor: pointer; border-radius: 10px; font-weight: bold; font-size: 1em; }
         button:hover { background: var(--main-color); color: white; }
-        button.selected { background: #a5b5a9; color: white; border-color: #a5b5a9; }
-        button.action-btn { position: relative; }
-        
-        .hidden { display: none; }
-        .ending-text { color: #8b0000; font-weight: bold; }
+        button.active { background: #a5b5a9; color: white; border-color: #a5b5a9; }
+        .ending-title { color: #8b0000; font-size: 1.2em; font-weight: bold; display: block; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="ui-header" class="hidden">
+    <div id="ui-header">
         <div id="money-display">金額: $1000</div>
         <div id="day-display">第 1 天</div>
     </div>
+    <div id="content">
+        <img id="cat-img" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400" alt="貓咪">
+        <div id="story-text"></div>
+        <div id="options-box"></div>
+    </div>
+</div>
+
+<script>
+    let state = {};
+
+    function initGame() {
+        state = {
+            day: 1,
+            money: 1000,
+            hasSecondCat: false,
+            expiredCount: 0,
+            notFedCount: 0,
+            notPoopCount: 0,
+            notBathCount: 0,
+            noSleepStreak: 0, // 連續不睡覺天數
+            didSleepLastNight: true, 
+            isSickDay: false, 
+            actions: [], // 晚上選擇的行動 ['feed', 'poop', 'bath']
+            tempFoodCost: 0 // 暫存晚上餵食的扣款，以便取消時加回
+        };
+        document.getElementById('ui-header').style.display = 'none';
+        renderStory(`<h2 style="text-align:center;">貓之猜想</h2><p style="text-align:center;">點擊進入遊戲開始你的故事</p>`);
+        renderOptions([{ text: "進入遊戲", action: firstScene }]);
+    }
+
+    function updateUI() {
+        document.getElementById('money-display').innerText = `金額: $${state.money}`;
+        document.getElementById('day-display').innerText = `第 ${state.day} 天`;
+        if (state.money < 0) triggerEnding(6);
+    }
+
+    function firstScene() {
+        document.getElementById('ui-header').style.display = 'flex';
+        updateUI();
+        renderStory(`前情提要：「你是一家量販店家具部的組長，飼養著一隻雜毛綠眼貓——二毛。」<br><br>第一幕：常去的寵物店有一隻雜毛綠眼貓被寄養著，你記得那個漂亮的女郎焦急地帶著貓兒來寄養，但一直到倒閉了她都沒有再回來。`);
+        renderOptions([
+            { text: "收養牠", action: () => { state.hasSecondCat = true; morningPhase(); } },
+            { text: "任其自生自滅", action: () => triggerEnding(1) }
+        ]);
+    }
+
+    function morningPhase() {
+        if (state.day > 10) return winGame();
+        
+        // 薪水發放：有上班才加錢
+        if (state.day > 1 && !state.isSickDay) state.money += 1000;
+        
+        // 重置當日狀態
+        state.actions = [];
+        state.tempFoodCost = 0;
+        updateUI();
+
+        renderStory(`第 ${state.day} 天：早晨。二毛在蹭你的腳踝。`);
+        renderFoodMenu(false); 
+    }
+
+    function renderFoodMenu(isNight) {
+        renderStory(isNight ? "選擇今晚的貓糧（餵食算作一次行動）：" : "選擇早上的貓糧：");
+        let opts = [
+            { text: "自家量販店貓糧 ($100)", action: () => doFeed(100, true, isNight) },
+            { text: "普通貓糧 ($300)", action: () => doFeed(300, false, isNight) },
+            { text: "加鈣貓糧 ($500)", action: () => doFeed(500, false, isNight) }
+        ];
+        if (isNight) opts.push({ text: "返回選項", action: nightPhase });
+        renderOptions(opts);
+    }
+
+    function doFeed(cost, isExpired, isNight) {
+        state.money -= cost;
+        if (isExpired) state.expiredCount++;
+        if (state.expiredCount >= 5) return triggerEnding(2);
+        updateUI();
+
+        if (isNight) {
+            state.tempFoodCost = cost; 
+            state.actions.push('feed');
+            checkActionLimit();
+        } else {
+            workSelection();
+        }
+    }
+
+    function workSelection() {
+        renderStory("餵完貓了，準備出門上班。");
+        let opts = [{ text: "上班", action: () => { state.isSickDay = false; nightPhase(); } }];
+        // 前一天沒睡覺才出現請假
+        if (!state.didSleepLastNight) {
+            opts.push({ text: "請假", action: forceSleep });
+        }
+        renderOptions(opts);
+    }
+
+    function forceSleep() {
+        state.isSickDay = true;
+        renderStory("你請了假，現在只能補眠。");
+        renderOptions([{ text: "強制補眠", action: () => { state.didSleepLastNight = true; state.noSleepStreak = 0; nextDayLogic(); } }]);
+    }
+
+    function nightPhase() {
+        if (state.isSickDay) return; // 補眠模式由 forceSleep 控制
+        updateUI();
+        renderStory(`下班回家了（今晚已行動 ${state.actions.length}/3 次）：`);
+        
+        const possibleActions = [
+            { id: 'feed', text: "喂貓" },
+            { id: 'poop', text: "鏟屎" },
+            { id: 'bath', text: "幫貓洗澡" },
+            { id: 'sleep', text: "睡覺" }
+        ];
+
+        let opts = possibleActions.map(act => {
+            let isSelected = state.actions.includes(act.id);
+            return {
+                text: act.text + (isSelected ? " (已選-點擊取消)" : ""),
+                className: isSelected ? "active" : "",
+                action: () => handleNightAction(act.id)
+            };
+        });
+        renderOptions(opts);
+    }
+
+    function handleNightAction(id) {
+        if (id === 'sleep') {
+            state.didSleepLastNight = true;
+            state.noSleepStreak = 0;
+            nextDayLogic();
+            return;
+        }
+
+        let index = state.actions.indexOf(id);
+        if (index > -1) {
+            // 取消行動
+            state.actions.splice(index, 1);
+            if (id === 'feed') {
+                state.money += state.tempFoodCost; // 加回錢
+                state.tempFoodCost = 0;
+            }
+            nightPhase();
+        } else {
+            // 執行行動
+            if (state.actions.length >= 3) return;
+            if (id === 'feed') {
+                renderFoodMenu(true);
+            } else {
+                state.actions.push(id);
+                checkActionLimit();
+            }
+        }
+    }
+
+    function checkActionLimit() {
+        if (state.actions.length >= 3) {
+            state.didSleepLastNight = false;
+            state.noSleepStreak++;
+            if (state.noSleepStreak >= 3) return triggerEnding(7);
+            nextDayLogic();
+        } else {
+            nightPhase();
+        }
+    }
+
+    function nextDayLogic() {
+        // 結算數值
+        if (!state.actions.includes('feed')) state.notFedCount++; else state.notFedCount = 0;
+        if (!state.actions.includes('poop')) state.notPoopCount++; else state.notPoopCount = 0;
+        if (!state.actions.includes('bath')) state.notBathCount++; else state.notBathCount = 0;
+
+        if (state.notFedCount >= 3) return triggerEnding(3);
+        if (state.notPoopCount >= 3) return triggerEnding(4);
+        if (state.notBathCount >= 3) return triggerEnding(5);
+
+        state.day++;
+        morningPhase();
+    }
+
+    const endings = {
+        1: ["一如往常", "你的日子一如既往，沒有絲毫改變。"],
+        2: ["過期貓糧", "那一天，你經過寵物用品部，你發現他們把過期食品換了標籤，重新上架售賣，寵物部的那些傢伙從不尊重動物。貓兒因此而死。"],
+        3: ["悲慘的貓", "連續３天晚上沒有進食後，回到家的你看著再無動靜的小貓痛哭出聲。"],
+        4: ["臭氣熏天！", "家中滿是臭味，貓咪排泄物堆滿家中。"],
+        5: ["家貓還是流浪貓？！", "兩隻貓的毛髮打結，身上滿是濃濃的臭味，你差點以為流浪貓跑進你家。"],
+        6: ["貧困潦倒！", "你花光了所有金錢，現在你連自己都養不起了。"],
+        7: ["無法預料的死亡", "３天沒有闔眼的你終於無法負荷，進入了死亡給予的、黑甜的夢境。"]
+    };
+
+    function triggerEnding(num) {
+        document.getElementById('ui-header').style.display = 'none';
+        renderStory(`<span class="ending-title">結局 ${num}：${endings[num][0]}</span><br>${endings[num][1]}`);
+        renderOptions([{ text: "重新開始", action: initGame }]);
+    }
+
+    function winGame() {
+        renderStory("<strong>10天後：「原主人的到訪」</strong><br><br>那位漂亮的女郎終於回來了。看著你把兩隻貓照顧得這麼好，她留下了感激的淚水。");
+        renderOptions([{ text: "重新遊戲", action: initGame }]);
+    }
+
+    function renderStory(html) { document.getElementById('story-text').innerHTML = html; }
+    function renderOptions(opts) {
+        const box = document.getElementById('options-box');
+        box.innerHTML = '';
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.innerHTML = o.text;
+            if (o.className) b.className = o.className;
+            b.onclick = o.action;
+            box.appendChild(b);
+        });
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>    </div>
     
     <div id="content">
         <div id="image-area">
