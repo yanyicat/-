@@ -4,21 +4,76 @@
     <meta charset="UTF-8">
     <title>貓之猜想 - Neko Conjecture</title>
     <style>
-        :root { --main-color: #4a5d4e; --bg-color: #f5f2ed; --danger-color: #d9534f; --paper-color: #f0e6d2; }
-        body { background-color: var(--bg-color); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        #game-container { width: 600px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); overflow: hidden; position: relative; }
-        #ui-header { background: var(--main-color); color: white; padding: 15px 20px; display: none; flex-direction: column; gap: 8px; }
+        :root { --main-color: #4a5d4e; --bg-color: #f5f2ed; --paper-color: #f0e6d2; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #game-container { 
+            width: 100%;
+            max-width: 600px; 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        
+        #ui-header { 
+            background: var(--main-color); 
+            color: white; 
+            padding: 15px 20px; 
+            display: none; 
+            flex-direction: column; 
+            gap: 8px;
+            flex-shrink: 0;
+        }
         .info-row { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; }
         #dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.85em; }
         .status-item { background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; }
         .warning { color: #ffeb3b; font-weight: bold; animation: blink 1s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        #content { padding: 25px; text-align: center; max-height: 80vh; overflow-y: auto; }
-        #cat-img { width: 100%; max-width: 380px; border-radius: 12px; margin-bottom: 15px; border: 3px solid #eee; display: none; }
-        #story-text { line-height: 1.7; color: #333; text-align: left; margin-bottom: 20px; font-size: 1.05em; }
-        .newspaper { background: var(--paper-color); padding: 20px; border: 2px solid #555; box-shadow: 5px 5px 0px #888; color: #222; font-family: "NSimSun", "serif"; margin-bottom: 20px; }
-        .news-title { font-size: 1.5em; font-weight: bold; text-decoration: underline; text-align: center; margin-bottom: 10px; color: #000; }
-        #options-box { display: flex; flex-direction: column; gap: 10px; }
+
+        #content { 
+            padding: 25px; 
+            text-align: center; 
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* 圖片樣式：確保圖片自適應寬度 */
+        #cat-img { 
+            width: 100%; 
+            max-width: 400px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            border: 3px solid #eee;
+            display: none; /* 初始隱藏，點擊進入後顯示 */
+        }
+
+        #story-text { line-height: 1.8; color: #333; text-align: left; margin-bottom: 25px; font-size: 1.05em; }
+        
+        .newspaper { background: var(--paper-color); padding: 20px; border: 2px solid #555; box-shadow: 5px 5px 0px #888; color: #222; font-family: "serif"; margin-bottom: 20px; }
+        .news-title { font-size: 1.5em; font-weight: bold; text-align: center; margin-bottom: 10px; }
+
+        #options-box { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px;
+            padding: 0 25px 25px 25px;
+            flex-shrink: 0;
+        }
         button { padding: 12px; border: 2px solid var(--main-color); background: white; color: var(--main-color); cursor: pointer; border-radius: 10px; font-weight: bold; font-size: 1em; transition: 0.2s; }
         button:hover { background: var(--main-color); color: white; }
         button.active { background: #a5b5a9; color: white; border-color: #a5b5a9; }
@@ -40,11 +95,13 @@
             <div class="status-item" id="stat-play"> 心情: 開心</div>
         </div>
     </div>
+    
     <div id="content">
-        <img id="cat-img" src="https://cdn.phototourl.com/free/2026-05-04-0e84f8b5-3bf8-4495-a2e6-e00369521f9b.png" alt="貓咪">
+        <img id="cat-img" src="https://cdn.phototourl.com/free/2026-05-04-0e84f8b5-3bf8-4495-a2e6-e00369521f9b.png" alt="小貓圖片">
         <div id="story-text"></div>
-        <div id="options-box"></div>
     </div>
+    
+    <div id="options-box"></div>
 </div>
 
 <script>
@@ -58,10 +115,10 @@
             expiredCount: 0, calciumCount: 0,
             notFedCount: 0, notPoopCount: 0, notBathCount: 0, notPlayCount: 0,
             noSleepStreak: 0, didSleepLastNight: true, isSickDay: false, 
-            actions: [], tempFoodCost: 0, currentScene: "start"
+            actions: [], tempFoodCost: 0
         };
         document.getElementById('ui-header').style.display = 'none';
-        document.getElementById('cat-img').style.display = 'inline-block';
+        document.getElementById('cat-img').style.display = 'inline-block'; // 顯示圖片
         renderStory(`<h2 style="text-align:center;">貓之猜想</h2><p style="text-align:center;">點擊進入遊戲，開始你的故事</p>`);
         renderOptions([{ text: "進入遊戲", action: introNews, forceEnable: true }]);
     }
@@ -82,14 +139,43 @@
         return false;
     }
 
+    function renderStory(html) { 
+        document.getElementById('story-text').innerHTML = html;
+        document.getElementById('content').scrollTop = 0;
+    }
+
+    function renderOptions(opts) {
+        const box = document.getElementById('options-box');
+        box.innerHTML = '';
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.innerHTML = o.text;
+            if (o.className) b.className = o.className;
+            b.onclick = () => {
+                if (isGameOver && !o.forceEnable) return;
+                o.action();
+            };
+            box.appendChild(b);
+        });
+    }
+
+    /* 劇情邏輯 */
+
     function introNews() {
-        document.getElementById('cat-img').style.display = 'none';
-        renderStory(`<div class="newspaper"><div class="news-title">「你家的貓也會得骨質疏鬆症」</div>你見過坐輪椅的貓嗎？你知道骨質疏鬆症有多可怕嗎？你能想像鼠輩們搖大擺地經過貓面前說：「來追我吧！」這種事嗎？於是我匆匆離開公司，前往「夢幻貓世界」購買有添加鈣的貓食。</div>`);
+        document.getElementById('cat-img').style.display = 'none'; // 新聞頁隱藏圖片
+        renderStory(`
+            <div class="newspaper">
+                <div class="news-title">「你家的貓也會得骨質疏鬆症」</div>
+                你見過坐輪椅的貓嗎？你知道骨質疏鬆症有多可怕嗎？你能想像鼠輩們搖大擺地經過貓面前說：「來追我吧！」這種事嗎？
+            </div>
+            你見到報導，感到一陣後怕，匆匆離開公司，前往「夢幻貓世界」購買有添加鈣的貓食。
+        `);
         renderOptions([{ text: "前往夢幻貓世界", action: firstSceneLogic }]);
     }
 
     function firstSceneLogic() {
-        renderStory(`「你是一家量販店家具部的組長，飼養著一隻雜色綠眼貓——二毛。」<br><br>你在「夢幻貓世界」購買添加鈣的貓食的時候見到了那個漂亮的女郎焦急地帶著一隻雜毛綠眼的貓兒來寄養，但一直到倒閉了她都沒有再回來領回她的小貓。`);
+        document.getElementById('cat-img').style.display = 'inline-block'; // 恢復圖片
+        renderStory(`「你是一家量販店家具部的組長，飼養著一隻雜色綠眼貓——二毛。」<br><br>你在「夢幻貓世界」購買添加鈣的貓食的時候見到了那個漂亮的女郎 她焦急地帶著一隻雜毛綠眼的貓兒來寄養，但一直到倒閉了她都沒有再來領回她的小貓。`);
         renderOptions([
             { text: "收養牠", action: adoptScene },
             { text: "任其自生自滅", action: () => triggerEnding(1) }
@@ -99,9 +185,367 @@
     function adoptScene() {
         state.hasSecondCat = true;
         document.getElementById('ui-header').style.display = 'flex';
-        renderStory(`跳出介面：現在，你就同時擁有２隻貓，兩隻雜色綠眼貓。你在原本的寵物店附近貼了十幾張「尋主海報」，希望能夠等到牠的主人。`);
+        renderStory(`<strong>現在，你就同時擁有２隻貓，兩隻雜色綠眼貓。</strong>你在原本的寵物店附近貼了十幾張「尋主海報」，希望能夠等到牠的主人。`);
         renderOptions([{ text: "進入生活", action: morningPhase }]);
     }
+
+    function morningPhase() {
+        if (isGameOver) return;
+        const specialDays = { 11: scenePhoneCalls, 12: sceneMeeting, 13: sceneStory13, 14: sceneStory14, 15: sceneStory15, 16: sceneStory16, 17: sceneStory17, 18: sceneStory18, 19: sceneStory19 };
+        if (specialDays[state.day]) return specialDays[state.day]();
+
+        if (state.day > 1 && !state.isSickDay) state.money += 1000;
+        state.actions = []; state.tempFoodCost = 0;
+        if (updateUI()) return;
+        renderStory(`第 ${state.day} 天：早晨。二毛與新夥伴小玉米都水汪汪的盯著你，等著早餐。`);
+        renderFoodMenu(false);
+    }
+
+    function renderFoodMenu(isNight) {
+        if (isGameOver) return;
+        renderStory(isNight ? "選擇今晚的貓糧（餵食算入行動次數）：" : "選擇早上的貓糧：");
+        let opts = [
+            { text: "1.自家量販店的貓糧：$100", action: () => doFeed(100, "expired", isNight) },
+            { text: "2.普通貓糧：$300", action: () => doFeed(300, "normal", isNight) },
+            { text: "3.加鈣貓糧：$500", action: () => doFeed(500, "calcium", isNight) }
+        ];
+        if (isNight) opts.push({ text: "返回選項", action: nightPhase });
+        renderOptions(opts);
+    }
+
+    function doFeed(cost, type, isNight) {
+        state.money -= cost;
+        if (type === "expired") state.expiredCount++;
+        if (type === "calcium") state.calciumCount++;
+        if (updateUI()) return;
+        if (state.expiredCount >= 3) return triggerEnding(2);
+        if (state.calciumCount >= 5) return triggerEnding(8);
+
+        if (isNight) {
+            state.tempFoodCost = cost; state.actions.push('feed');
+            renderStory("貓兒們吃的很開心，你看著牠們狼吞虎嚥的樣子，心裡覺得踏實。");
+            renderOptions([{ text: "確定", action: checkActionLimit }]);
+        } else workSelection();
+    }
+
+    function workSelection() {
+        renderStory("餵完貓了，準備出門上班。");
+        let opts = [{ text: "上班", action: () => { state.isSickDay = false; nightPhase(); } }];
+        if (!state.didSleepLastNight) opts.push({ text: "請假", action: forceSleep });
+        renderOptions(opts);
+    }
+
+    function forceSleep() {
+        state.isSickDay = true;
+        renderStory("你請了假，陷入香甜的美夢之中。精神恢復了，但今天沒有收入。");
+        renderOptions([{ text: "補眠", action: () => { state.didSleepLastNight = true; state.noSleepStreak = 0; finishDayWork(); } }]);
+    }
+
+    function nightPhase() {
+        if (isGameOver || updateUI()) return;
+        renderStory(`回家了，今晚還能行動 ${3 - state.actions.length} 次：<br><small>再次點擊已選項目可取消</small>`);
+        const possibleActions = [
+            { id: 'feed', text: "餵貓" },
+            { id: 'poop', text: "鏟屎" },
+            { id: 'bath', text: "幫貓洗澡" },
+            { id: 'play', text: "陪貓玩耍" },
+            { id: 'sleep', text: "睡覺" }
+        ];
+        renderOptions(possibleActions.map(act => ({
+            text: `${act.text}${state.actions.includes(act.id) ? " (已完成)" : ""}`,
+            className: state.actions.includes(act.id) ? "active" : "",
+            action: () => handleNightAction(act.id)
+        })));
+    }
+
+    function handleNightAction(id) {
+        if (id === 'sleep') { state.didSleepLastNight = true; state.noSleepStreak = 0; finishDayWork(); return; }
+        let index = state.actions.indexOf(id);
+        if (index > -1) {
+            state.actions.splice(index, 1);
+            if (id === 'feed') { state.money += state.tempFoodCost; state.tempFoodCost = 0; updateUI(); }
+            nightPhase();
+        } else {
+            if (state.actions.length >= 3) return;
+            if (id === 'feed') renderFoodMenu(true);
+            else {
+                state.actions.push(id);
+                let msg = "";
+                if (id === 'poop') msg = "鏟屎：貓咪圍著你喵喵叫，像是覺得你口味特殊。";
+                if (id === 'bath') msg = "幫貓洗澡：貓兒變得香噴噴的，你情不自禁埋進貓兒的腹部大吸一口。";
+                if (id === 'play') msg = "陪貓玩耍：毛絨絨的小傢伙們圍繞在你身邊，你幾乎覺得自己來到天堂。";
+                renderStory(msg);
+                renderOptions([{ text: "確定", action: checkActionLimit }]);
+            }
+        }
+    }
+
+    function checkActionLimit() {
+        if (state.actions.length >= 3) {
+            state.didSleepLastNight = false; state.noSleepStreak++;
+            if (state.noSleepStreak >= 3) triggerEnding(7);
+            else finishDayWork();
+        } else nightPhase();
+    }
+
+    function finishDayWork() {
+        if (!state.actions.includes('feed')) state.notFedCount++; else state.notFedCount = 0;
+        if (!state.actions.includes('poop')) state.notPoopCount++; else state.notPoopCount = 0;
+        if (!state.actions.includes('bath')) state.notBathCount++; else state.notBathCount = 0;
+        if (!state.actions.includes('play')) state.notPlayCount++; else state.notPlayCount = 0;
+
+        if (state.notPlayCount >= 3) { state.notPlayCount = 0; triggerSideStory1(); return; }
+        if (state.notFedCount >= 3) return triggerEnding(3);
+        if (state.notPoopCount >= 3) return triggerEnding(4);
+        if (state.notBathCount >= 3) return triggerEnding(5);
+
+        if (state.day === 12) { finishDay12(); return; }
+        if ([13, 14, 15, 16, 17].includes(state.day)) { state.day++; morningPhase(); return; }
+
+        state.day++;
+        morningPhase();
+    }
+
+    function triggerSideStory1() {
+        state.money -= 2000;
+        renderStory(`<strong>支線 1：家具慘案</strong><br><br>貓咪因孤寂而抓爛了你的家具，需支付 $2000。`);
+        renderOptions([{ text: state.money < 0 ? "查看結果" : "繼續遊戲", action: () => { if(updateUI()) return; state.day++; morningPhase(); }, forceEnable: true }]);
+    }
+
+    function scenePhoneCalls() {
+        renderStory("張貼海報以來，你在夜間接到了許多通電話：");
+        renderOptions([
+            { text: "選項一", action: () => renderPhoneUI("你拿起話筒，「喵、喵。」「喵、喵，我是小玉米，我找我的主人，喵——。」") },
+            { text: "選項二", action: () => renderPhoneUI("「我受到海報影響，我要用玉米自殺！」一個女聲說。你告訴她：「你只要連續一個月每天都吃十條玉米就會死！」（當然是騙她的，但我忘了說，不要一個月，只要連續吃半個月就會先胖死！）") },
+            { text: "選項三", action: () => renderPhoneUI("一道淫穢的聲音傳來：「我是小玉米的主人，我這邊還有小金絲貓，純正白俄血統，你有沒有興趣？嘻嘻。」") },
+            { text: "選項四", action: sceneCall4 }
+        ]);
+    }
+
+    function renderPhoneUI(text) {
+        renderStory(text);
+        renderOptions([{ text: "掛掉電話", action: scenePhoneCalls }]);
+    }
+
+    function sceneCall4() {
+        renderStory("「我要我的貓，你偷了我的貓，我要我的貓。」");
+        renderOptions([{ text: "「莫名其妙，誰偷妳的貓。」", action: () => {
+            renderStory("「我的貓叫小玉米，一年前寄放在『夢幻貓世界』。」");
+            renderOptions([{ text: "「一年後妳才想到回來找——，」我逐漸相信她的說詞，「不過妳怎麼會說我偷妳的貓？」", action: () => {
+                renderStory("「真對不起，我一時情急……。」");
+                renderOptions([{ text: "我接受她的道歉，我們約好第二天見面。", action: () => { state.day++; morningPhase(); } }]);
+            } }]);
+        } }]);
+    }
+
+    function sceneMeeting() {
+        renderStory("你帶著小玉米到火車站廣場的麥當勞見面，她一身粉紅套裝，美貌如昔，但她已由少女成為了少婦。你們談論著小玉米的歸屬，「你們都得給對方一段時間適應。」你說。最後你們同意，小玉米還是先由你帶回家（內心深處響起一道聲音：你奸計得逞了！）而她必須經常到你的住處看牠，直到重建感情。");
+        renderOptions([{ text: "我奸計得逞了！", action: () => {
+            renderStory("你記下了她的名字葉明佳，她的朋友都叫她葉子，之前在上海工作。你送她上計程車，她的背影依然那麼動人……");
+            renderOptions([{ text: "我內心為之激盪不已。", action: () => { state.actions = []; nightPhase(); } }]);
+        } }]);
+    }
+
+    function finishDay12() {
+        renderStory("深夜裡，你躺在床上悲傷地想著：我肯定愛上她了：葉子——這個迷人的名字……");
+        renderOptions([
+            { text: "飛蛾撲火式的追求", action: () => { state.day++; morningPhase(); } },
+            { text: "繼續停留觀察階段", action: triggerSide2 }
+        ]);
+    }
+
+    function triggerSide2() {
+        renderStory("<strong>支線 2：猶豫就會敗北</strong><br><br>你們之間的關係在曖昧不清、裹足不前中走到盡頭。");
+        renderOptions([
+            { text: "支付$3000重新選擇", action: () => { if(state.money < 3000) triggerEnding(9); else { state.money -= 3000; updateUI(); finishDay12(); } }, forceEnable: true },
+            { text: "重新開始", action: initGame, forceEnable: true }
+        ]);
+    }
+
+    function sceneStory13() {
+        renderStory("晚間７點，葉子來到你狹小的客廳，帶了零嘴，喝了你家的啤酒，你們聊著，氣氛愉快。你們一起餵貓、鏟屎、幫貓洗澡、陪貓玩耍。");
+        state.notFedCount = 0; state.notPoopCount = 0; state.notBathCount = 0; state.notPlayCount = 0;
+        renderOptions([{ text: "確定", action: () => { state.day++; morningPhase(); } }]);
+    }
+
+    function sceneStory14() {
+        renderStory("過２個星期，她把小玉米帶走了，你和二毛鬱鬱寡歡，你覺得自己該行動了嗎？");
+        renderOptions([
+            { text: "帶著二毛前往拜訪", action: () => { if(state.money < 120) triggerEnding(6); else { state.money -= 120; updateUI(); sceneVisit(); } } },
+            { text: "按捺著等待", action: triggerSide2 }
+        ]);
+    }
+
+    function sceneVisit() {
+        renderStory("你事先打給了葉子，她有些意外，不過還是很高興的告訴你位置，你搭乘計程車前往。<br>忽然下雨了，在你一籌莫展之際，看見葉子撐著傘快步向你走去，領著你進入她的公寓，她告訴你：「你打電話來的時候，我在做蛋糕呢！」");
+        renderOptions([{ text: "進入公寓", action: sceneApartment }]);
+    }
+
+    function sceneApartment() {
+        renderStory("貓兒們碰面親暱地碰了碰鼻尖，打了招呼，葉子在廚房弄她的蛋糕，你觀察著環境。");
+        renderOptions([
+            { text: "客廳", action: () => { renderStory("室內布置比你想像的典雅，都是「生活工場」的出品，單身上班族的最愛。"); renderOptions([{ text: "確定", action: sceneApartment }]); } },
+            { text: "廚房", action: sceneKitchenDialogueStart },
+            { text: "房間角落", action: () => { renderStory("貓兒們開心地玩在一塊。"); renderOptions([{ text: "確定", action: sceneApartment }]); } }
+        ]);
+    }
+
+    function sceneKitchenDialogueStart() {
+        renderStory("你聽見了什麼東西掉落——竟然是蛋糕，上面的鮮奶油濺得到處都是，看見你，葉子突然哭了出來。貓兒適時衝了進來，東舔西舔，我們對視，最後一起大笑。吃蛋糕做晚餐有些太誇張了，我提議還是叫披薩比較保險，她點頭同意：「我太笨了，這怎麼辦呢？我還要學做菜呢。」<br><br>「妳倒不如去參加『新娘補習班』算了。」她臉色怪異地沉默了。");
+        renderOptions([{ text: "噢，有個混蛋糾纏著我的愛人。你恨恨地想。", action: sceneKitchenFinalDialogue }]);
+    }
+
+    function sceneKitchenFinalDialogue() {
+        renderStory("你忍不住張口：");
+        renderOptions([
+            { text: "「婚姻是愛情的墳墓」", action: sceneKitchenFinal2 },
+            { text: "「人們因誤會而結婚，因了解而離婚」", action: sceneKitchenFinal2 }
+        ]);
+    }
+
+    function sceneKitchenFinal2() {
+        renderStory("葉子心不在焉，加深了你的恨意，你換上曖昧的笑容。");
+        renderOptions([{ text: "「妳的男友是大陸人對不對？」", action: () => {
+            renderStory("「沒錯。」葉子驚訝地抬起頭。");
+            renderOptions([{ text: "「共匪！」", action: () => {
+                renderStory("你胡言亂語起來，葉子瞪著你，你正打算隨便找個理由離開時，電話鈴聲響了，葉子拿起了電話。");
+                renderOptions([{ text: "偷聽", action: () => {
+                    renderStory("葉子激動地說：「你打來幹什麼？」她沉默了一段時間，任對方自言自語，最後忍不住冒出一句——「共匪！」之後用力掛上電話。「我不會原諒他，永遠不會！」");
+                    renderOptions([{ text: "關我屁事！我心裡說。", action: () => {
+                        renderStory("不到五分鐘電話又響了，「我不接他電話。」她說著，視線卻時不時瞟向電話。淡化再度響起，你再也受不了了——");
+                        renderOptions([{ text: "帶著二毛起身告辭。", action: () => { state.actions = []; nightPhase(); } }]);
+                    }}]);
+                }}]);
+            }}]);
+        }}]);
+    }
+
+    function sceneStory15() {
+        renderStory("我討厭任何與「中國」有關的東西。");
+        renderOptions([{ text: "繼續", action: () => {
+            renderStory("我不再同情「大陸新娘」。");
+            renderOptions([{ text: "繼續", action: () => {
+                renderStory("我不再介紹大陸家具給客人，甚至偷偷說它們壞話。");
+                renderOptions([{ text: "確定", action: () => { state.actions = []; nightPhase(); } }]);
+            }}]);
+        }}]);
+    }
+
+    function sceneStory16() {
+        renderStory("晚上，門鈴響了，我打開門，竟然是葉子。她神色驚惶，將小玉米往我懷裡塞，你嚇了一跳：「發生什麼事？」<br><br>「他來台灣了！」<br>「他是誰？難道是共匪？」<br>「你怎麼這麼罵人？」葉子用奇怪的聲音說，「總之你幫我照顧一下小玉米，我去別的地方躲躲。」");
+        renderOptions([{ text: "「你可以躲在我這裡——。」你大聲說。", action: () => {
+            renderStory("她搖搖頭，把我推進屋裡走了。");
+            renderOptions([{ text: "回家", action: () => { state.actions = []; nightPhase(); } }]);
+        }}]);
+    }
+
+    function sceneStory17() {
+        renderStory("頁面：葉子打電話過來。");
+        renderOptions([{ text: "接聽", action: () => {
+            renderStory("「我現在在上海，我們和好了。」你聽見葉子這樣說，你仍然瞠目結舌，反應不過來。「你有在聽嗎？——。」");
+            renderOptions([{ text: "「我在聽……。」", action: () => {
+                renderStory("「你相信我嗎？」相信什麼？你壓根不明白要相信什麼。「相信我們是永遠的好朋友，你是小玉米的守護神，好，說定了唄，等阿拉回來，拜拜！」她掛掉電話。");
+                renderOptions([{ text: "掛掉電話", action: () => { state.actions = []; nightPhase(); } }]);
+            }}]);
+        }}]);
+    }
+
+    function sceneStory18() {
+        renderStory("現在，你又同時擁有２隻貓了。");
+        renderOptions([{ text: "確定", action: () => { state.day++; morningPhase(); } }]);
+    }
+
+    function sceneStory19() {
+        renderStory("半年後接近聖誕節的晚上，葉子回來了，她發誓再也不回上海，你半信半疑，還是恭送了她和小貓離開，你們就像是她未曾離開過那樣相處……");
+        renderOptions([{ text: "我好像又燃起對她的愛……", action: () => {
+            renderStory("但沒多久，葉子再度將小玉米丟給了你。「我必須回上海，把問題一次解決，」她語氣曖昧，「等我回來，最親愛的小玉米和——。」");
+            renderOptions([{ text: "我的排名居然落後小玉米？！你凶狠地瞪著小玉米，看著牠慵懶而無任何警惕的模樣，更加惱火。。", action: sceneVolcano }]);
+        }}]);
+    }
+
+    function sceneVolcano() {
+        renderStory("到了黃昏，你的怒氣火山一樣爆發了。你抓起小玉米，奔向附近公園，閃身入樹叢——");
+        let opt = { text: "放生", action: sceneParkOut };
+        renderOptions([opt, opt, opt]);
+    }
+
+    function sceneParkOut() {
+        renderStory("你懷著解放後的輕鬆自由出了公園，到速食店用餐，看見「玉米條」時，你的心弦震動了一下，但也僅只於此。");
+        renderOptions([{ text: "回家。", action: sceneIndifferentChain }]);
+    }
+
+    function sceneIndifferentChain() {
+        renderStory("小玉米經常性的失蹤使二毛釀成一種順其自然的態度，「無所謂」。葉子在不在？");
+        renderOptions([{ text: "無所謂。", action: () => {
+            renderStory("小玉米在不在？");
+            renderOptions([{ text: "無所謂。", action: () => {
+                renderStory("愛情結束？");
+                renderOptions([{ text: "無所謂。", action: () => {
+                    renderStory("生命空白？無所謂。");
+                    renderOptions([{ text: "是的，一切都無所謂、無所謂。", action: () => {
+                        renderStory("我將她們的照片放在桌上，打算點火燒它，尋找打火機時，我聽見二毛的叫聲。一回頭，二毛跳上桌，對著照片猛嗅……");
+                        renderOptions([{ text: "「跟她們道別吧！」", action: () => {
+                            renderStory("「道別」……我說出口，彷彿感受到生命中某種重要東西正在流逝。");
+                            renderOptions([
+                                { text: "面對", action: sceneRescueRescue },
+                                { text: "逃避", action: () => triggerEnding(10) }
+                            ]);
+                        }}]);
+                    }}]);
+                }}]);
+            }}]);
+        }}]);
+    }
+
+    function sceneRescueRescue() {
+        renderStory("你痛苦地呻吟，套上鞋奪門而出，小貓仍然瑟縮著躲在樹叢中，你將牠抱在懷中時，牠還在顫抖。");
+        renderOptions([
+            { text: "支付最好的 $10000", action: () => { if(state.money < 10000) triggerEnding(9); else { state.money -= 10000; triggerEnding(11); } } },
+            { text: "支付一般的 $5000", action: () => { if(state.money < 5000) triggerEnding(9); else { state.money -= 5000; triggerEnding(12); } } },
+            { text: "順其自然 $0", action: sceneCatDeathFinal }
+        ]);
+    }
+
+    function sceneCatDeathFinal() {
+        renderStory("小玉米回家後，不到一星期便死了。你將小玉米埋在遺棄牠的地方，同時撒了點玉米粒，希望那個地方來年會長出玉米。");
+        renderOptions([
+            { text: "誠實", action: () => triggerEnding(13) },
+            { text: "欺瞞", action: () => {
+                renderStory("你找遍了市裡的寵物店，終於買到一隻和小玉米神似的雜色貓，「小玉米二號」，你拿著葉子的照片，開始訓練牠：這才是牠真正的主人。");
+                renderOptions([{ text: "繼續。", action: () => triggerEnding(14) }]);
+            }}
+        ]);
+    }
+
+    const endings = {
+        1: "一如往常<br><br>你的日子一如既往，沒有絲毫改變。",
+        2: "過期貓糧<br><br>那一天，你經過寵物用品部，你發現他們把過期食品換了標籤，重新上架售賣，寵物部的那些傢伙從不尊重動物。貓兒因此而死。",
+        3: "悲慘的貓<br><br>連續３天晚上沒有進食後，回到家的你看著再無動靜的小貓痛哭出聲。",
+        4: "臭氣熏天！<br><br>家中滿是臭味，貓咪排泄物堆滿家中。",
+        5: "家貓還是流浪貓？！<br><br>兩隻貓的毛髮打結，身上滿是濃濃的臭味，你差點以為流浪貓跑進你家。",
+        6: "貧困潦倒！<br><br>你花光了所有金錢，現在你連自己都養不起了。",
+        7: "無法預料的死亡<br><br>３天沒有闔眼的你終於無法負荷，進入了死亡給予的、黑甜的夢境。",
+        8: "新聞不可信！<br><br>補充了過量的加鈣貓糧，你的貓因而罹患了膀胱結石引發急性腎衰竭，在你的懷中閉上了雙眼。",
+        9: "你心知肚明！<br><br>是的，你清楚的知道你金錢不夠吧……",
+        10: "逃避可恥且沒用<br><br>那天過後，你偶然聽見鄰居討論附近公園樹叢裡有隻屍體發臭的貓。「臭死了啊。」他嫌棄地用手在鼻子前揮了揮。",
+        11: "金錢的力量<br><br>金錢的力量完全拯救了小玉米，活蹦亂跳，同時，你卻也幾乎耗費完你所有存款，只能搬家，之後再也沒有和葉子連絡過。",
+        12: "殘存的希望<br><br>你救回了小玉米的性命，但牠也從此身體虛弱，病懨懨的，需要你的細心照料，你再也沒有精力耽溺情愛。",
+        13: "遲來的後悔<br><br>你誠實的告訴了葉子，看著她悲傷的雙眸，懺悔、懊惱、悲傷，你心中百感交集，再也沒臉與她相見。",
+        14: "神秘的笑意<br><br>五個月四天，葉子回來了，一如往常帶走「小玉米二號」，但僅隔三天就將小貓送回。她反常地回頭，聲音出奇的低沉，彷彿來自另一個世界。恍惚間，你發現葉子臉上浮現出一抹神秘的笑容。這是你永遠忘不了的笑容。"
+    };
+
+    function triggerEnding(num) {
+        isGameOver = true; 
+        document.getElementById('ui-header').style.display = 'none';
+        document.getElementById('cat-img').style.display = 'none';
+        renderStory(`<span class="ending-title">結局 ${num}</span><br>${endings[num]}`);
+        renderOptions([{ text: "重新開始", action: initGame, forceEnable: true }]);
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>
 
     function morningPhase() {
         if (isGameOver) return;
