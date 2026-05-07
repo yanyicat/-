@@ -247,7 +247,7 @@
         renderStory(isNight ? "選擇今晚的貓糧（行動點 -1）：" : "選擇早上的貓糧：");
         let opts = [
             { text: "1.自家量販店的貓糧：$100", action: () => doFeed(100, "expired", isNight) },
-            { text: "2.普通貓糧：$300", action: () => doFeed(300, "normal", isNight) },
+            { text: "2.普通貓糧：$200", action: () => doFeed(200, "normal", isNight) },
             { text: "3.加鈣貓糧：$500", action: () => doFeed(500, "calcium", isNight) }
         ];
         if (isNight) opts.push({ text: "返回選項", action: nightPhase });
