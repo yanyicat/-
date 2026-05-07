@@ -409,7 +409,7 @@
     }
 
     function sceneStory14() {
-        renderStory("過２個星期，她把小玉米帶走了，你和二毛鬱鬱垢歡，你覺得自己該行動了嗎？");
+        renderStory("過２個星期，她把小玉米帶走了，你和二毛鬱鬱寡歡，你覺得自己該行動了嗎？");
         renderOptions([
             { text: "帶著二毛前往拜訪", action: () => { if(state.money < 120) triggerEnding(6); else { state.money -= 120; updateUI(); sceneVisit(); } } },
             { text: "按捺著等待", action: triggerSide2 }
@@ -535,7 +535,7 @@
     function sceneRescueRescue() {
         renderStory("你痛苦地呻吟，套上鞋奪門而出，小貓仍然瑟縮著躲在樹叢中，你將牠抱在懷中時，牠還在顫抖。");
         renderOptions([
-            { text: "支付最好的 $10000", action: () => { if(state.money < 10000) triggerEnding(9); else { state.money -= 10000; triggerEnding(11); } } },
+            { text: "支付最好的 $7000", action: () => { if(state.money < 7000) triggerEnding(9); else { state.money -= 7000; triggerEnding(11); } } },
             { text: "支付一般的 $5000", action: () => { if(state.money < 5000) triggerEnding(9); else { state.money -= 5000; triggerEnding(12); } } },
             { text: "順其自然 $0", action: sceneCatDeathFinal }
         ]);
