@@ -478,7 +478,7 @@
     }
 
     function sceneStory17() {
-        renderStory("頁面：葉子打電話過來。");
+        renderStory("葉子打電話過來。");
         renderOptions([{ text: "接聽", action: () => {
             renderStory("「我現在在上海，我們和好了。」你聽見葉子這樣說，你仍然瞠目結舌，反應不過來。「你有在聽嗎？——。」<br>「你相信我嗎？」相信什麼？你壓根不明白要相信什麼。「相信我們是永遠的好朋友，你是小玉米的守護神，好，說定了唄，等阿拉回來，拜拜！」她掛掉電話。");
             renderOptions([{ text: "掛掉電話", action: () => { state.actions = []; nightPhase(); } }]);
